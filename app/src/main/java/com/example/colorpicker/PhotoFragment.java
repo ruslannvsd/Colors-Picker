@@ -13,6 +13,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
@@ -31,6 +32,7 @@ public class PhotoFragment extends Fragment {
         boolean clicked;
         String complementary;
         String triadic;
+        String tetradic;
         @SuppressLint("ClickableViewAccessibility")
         public View onCreateView(
                 @NonNull LayoutInflater inflater, ViewGroup container,
@@ -67,24 +69,58 @@ public class PhotoFragment extends Fragment {
                                 int selectedPixel = gettingColor(event, v, bitmap);
                                 String selectedHex = gettingHexColorString(selectedPixel);
 
+                                // complementary
                                 int complementaryPixel = getInvertPixel(selectedPixel);
                                 String complementaryHex = gettingHexColorString(complementaryPixel);
                                 bnd.complFirst.setText(selectedHex);
                                 bnd.complSecond.setText(complementaryHex);
+                                bnd.complFirst.setTextColor(Color.parseColor(complementaryHex));
+                                bnd.complSecond.setTextColor(Color.parseColor(selectedHex));
                                 bnd.complFirst.setBackgroundColor(Color.parseColor(selectedHex));
                                 bnd.complSecond.setBackgroundColor(Color.parseColor(complementaryHex));
                                 complementary = "Complementary:\n" + selectedHex + "\n" + complementaryHex;
 
+                                // triadic
                                 int[] triadicPixels = getTriadic(selectedPixel);
-                                String firstHex = gettingHexColorString(triadicPixels[0]);
-                                String secondHex = gettingHexColorString(triadicPixels[1]);
+                                String secondTriadicHex = gettingHexColorString(triadicPixels[0]);
+                                String thirdTriadicHex = gettingHexColorString(triadicPixels[1]);
                                 bnd.triangleOne.setText(selectedHex);
-                                bnd.triangleTwo.setText(firstHex);
-                                bnd.triangleThree.setText(secondHex);
-                                bnd.triangleOne.setBackgroundColor(Color.parseColor(selectedHex));
-                                bnd.triangleTwo.setBackgroundColor(Color.parseColor(firstHex));
-                                bnd.triangleThree.setBackgroundColor(Color.parseColor(secondHex));
-                                triadic = "Triadic Harmony:\n" + selectedHex + "\n" + firstHex + "\n" + secondHex;
+                                bnd.triangleTwo.setText(secondTriadicHex);
+                                bnd.triangleThree.setText(thirdTriadicHex);
+
+                                bnd.triangleOne.setTextColor(getInvertPixel(selectedPixel));
+                                bnd.triangleTwo.setTextColor(getInvertPixel(triadicPixels[0]));
+                                bnd.triangleThree.setTextColor(getInvertPixel(triadicPixels[1]));
+                                bnd.triangleOne.setBackgroundColor(selectedPixel);
+                                bnd.triangleTwo.setBackgroundColor(triadicPixels[0]);
+                                bnd.triangleThree.setBackgroundColor(triadicPixels[1]);
+                                triadic = "Triadic Harmony:\n" + selectedHex + "\n" + secondTriadicHex + "\n" + thirdTriadicHex;
+
+                                // tetradic
+                                int[] tetradicPixels = getTetradic(selectedPixel);
+                                String secondTetradicHex = gettingHexColorString(tetradicPixels[0]);
+                                String thirdTetradicHex = gettingHexColorString(tetradicPixels[1]);
+                                String fourthTetradicHex = gettingHexColorString(tetradicPixels[2]);
+
+                                bnd.tetradicOne.setText(selectedHex);
+                                bnd.tetradicTwo.setText(secondTetradicHex);
+                                bnd.tetradicThree.setText(thirdTetradicHex);
+                                bnd.tetradicFour.setText(fourthTetradicHex);
+
+                                bnd.tetradicOne.setTextColor(getInvertPixel(selectedPixel));
+                                bnd.tetradicTwo.setTextColor(getInvertPixel(tetradicPixels[0]));
+                                bnd.tetradicThree.setTextColor(getInvertPixel(tetradicPixels[1]));
+                                bnd.tetradicFour.setTextColor(getInvertPixel(tetradicPixels[2]));
+                                bnd.tetradicOne.setBackgroundColor(selectedPixel);
+                                bnd.tetradicTwo.setBackgroundColor(tetradicPixels[0]);
+                                bnd.tetradicThree.setBackgroundColor(tetradicPixels[1]);
+                                bnd.tetradicFour.setBackgroundColor(tetradicPixels[2]);
+
+                                tetradic = "Tetradic Harmony:\n"
+                                        + selectedHex + "\n"
+                                        + secondTetradicHex + "\n"
+                                        + thirdTetradicHex + "\n"
+                                        + fourthTetradicHex;
                         }
                         bnd.complementaryCard.setOnClickListener(view -> {
                                 if (clicked) {
@@ -96,11 +132,17 @@ public class PhotoFragment extends Fragment {
                                         shareIntent(requireContext(), triadic);
                                 }
                         });
+                        bnd.tetradicCard.setOnClickListener(view -> {
+                                if (clicked) {
+                                        shareIntent(requireContext(), tetradic);
+                                }
+                        });
                         return true;
                 });
         return bnd.getRoot();
         }
         static void shareIntent(Context ctx, String text) {
+                Toast.makeText(ctx, "Share the colors", Toast.LENGTH_LONG).show();
                 Intent intent = new Intent();
                 intent.setAction(Intent.ACTION_SEND);
                 intent.putExtra(Intent.EXTRA_TEXT, text);
@@ -108,14 +150,32 @@ public class PhotoFragment extends Fragment {
                 Intent shareIntent = Intent.createChooser(intent, null);
                 ctx.startActivity(shareIntent);
         }
-        static int[] getTriadic(int pixel) {
+        static int[] getRGB(int pixel) {
                 int red = Color.red(pixel);
                 int green = Color.green(pixel);
                 int blue = Color.blue(pixel);
-                int first = Color.rgb(blue, red, green);
-                int second = Color.rgb(green, blue, red);
+                return new int[] {red, green, blue};
+        }
+        static int[] getTriadic(int pixel) {
+                int[] rgb = getRGB(pixel);
+                int first = Color.rgb(rgb[2], rgb[0], rgb[1]);
+                int second = Color.rgb(rgb[1], rgb[2], rgb[0]);
 
                 return new int[] {first, second};
+        }
+        static float getHueHSV(float initialHue) {
+                if (initialHue > 360) return initialHue - 360; else return initialHue;
+        }
+        static int[] getTetradic(int pixel) {
+                float[] hsv = new float[3];
+                Color.colorToHSV(pixel, hsv);
+                float[] firstHsv = new float[] {getHueHSV(hsv[0] + 90), hsv[1], hsv[2]};
+                float[] secondHsv = new float[] {getHueHSV(hsv[0] + 180), hsv[1], hsv[2]};
+                float[] thirdHsv = new float[] {getHueHSV(hsv[0] + 270), hsv[1], hsv[2]};
+                int firstIntColor = Color.HSVToColor(firstHsv);
+                int secondIntColor = Color.HSVToColor(secondHsv);
+                int thirdIntColor = Color.HSVToColor(thirdHsv);
+                return new int[] {firstIntColor, secondIntColor, thirdIntColor};
         }
         static int getInvertPixel(int pixel) {
                 int red = Color.red(pixel);
