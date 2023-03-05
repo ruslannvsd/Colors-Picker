@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="complementary">Complementary</string>
+    <string name="triadic">Triadic</string>
+    <string name="tetradic">Tetradic</string>
+    <string name="analogous">Analogous</string>
+</resources>
