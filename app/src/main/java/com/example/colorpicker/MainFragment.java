@@ -37,9 +37,9 @@ public class MainFragment extends Fragment {
                         intent.setType("image/*");
                         launchSomeActivity.launch(intent);
                 });
-                goToImage.setOnClickListener(v -> {
-                        Navigation.findNavController(v).navigate(R.id.action_mainFragment_to_photoFragment, bundle);
-                });
+                goToImage.setOnClickListener(v ->
+                        Navigation.findNavController(v).navigate(R.id.action_mainFragment_to_photoFragment, bundle)
+                );
         return bnd.getRoot();
         }
 
@@ -66,7 +66,7 @@ public class MainFragment extends Fragment {
                                         } catch (FileNotFoundException e) {
                                                 throw new RuntimeException(e);
                                         }
-                                };
+                                }
                         }
                 });
-};
+}
