@@ -24,6 +24,8 @@ import com.example.colorpicker.databinding.FragmentPhotoBinding;
 
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 public class PhotoFragment extends Fragment {
         String path;
@@ -68,16 +70,16 @@ public class PhotoFragment extends Fragment {
                         if (event.getAction() == MotionEvent.ACTION_UP) {
                                 clicked = true;
                                 int touchedPix = getTouchColor(event, v, bitmap);
-                                String pixHex = getHexColorString(touchedPix);
+                                Colors colors = getPixelColor(touchedPix);
 
                                 // complementary
-                                complementary = complementaryBind(touchedPix, pixHex, bnd);
+                                complementary = complementaryBind(colors, bnd);
                                 // triadic
-                                triadic = triadicBind(touchedPix, pixHex, bnd);
+                                triadic = triadicBind(colors, bnd);
                                 // tetradic
-                                tetradic = tetradicBind(touchedPix, pixHex, bnd);
+                                tetradic = tetradicBind(colors, bnd);
                                 // analogous
-                                analogous = analogousBind(touchedPix, pixHex, bnd);
+                                analogous = analogousBind(colors, bnd);
                         }
                         bnd.complementaryCard.setOnClickListener(view -> {
                                 if (clicked) {
@@ -104,7 +106,29 @@ public class PhotoFragment extends Fragment {
         return bnd.getRoot();
         }
 
+        static Colors getPixelColor(int pixel) {
+                ColorInfo pixelIntString = new ColorInfo(pixel, getHexColorString(pixel), getIntensity(pixel));
+                ColorInfo complementary = getComplementaryPixel(pixel);
+                List<ColorInfo> triadic = getTriadic(pixel);
+                List<ColorInfo> tetradic = getTetradic(pixel);
+                List<ColorInfo> analogous = getAnalogous(pixel);
+                Triadic triadicObj = new Triadic(triadic.get(0), triadic.get(1));
+                Tetradic tetradicObj = new Tetradic(tetradic.get(0), tetradic.get(1), tetradic.get(2));
+                Analogous analogousObj = new Analogous(analogous.get(0), analogous.get(1));
+                return new Colors(pixelIntString, complementary, triadicObj, tetradicObj, analogousObj);
+        }
+
         // supporting methods
+        static int getIntensity(int color) {
+                int black = Cons.BLACK;
+                int white = Cons.WHITE;
+                int red = Color.red(color);
+                int green = Color.green(color);
+                int blue = Color.blue(color);
+                if (((red * 0.299) + (green * 0.587) + (blue * 0.114)) > 186)
+                        return black;
+                else return white;
+        }
         static int getTouchColor(MotionEvent event, View v, Bitmap bitmap) {
                 float touchX = event.getX();
                 float touchY = event.getY();
@@ -147,111 +171,141 @@ public class PhotoFragment extends Fragment {
         }
 
         // methods for getting harmonies after touching pixel
-        static int getComplementaryPixel(int pixel) {
+        static ColorInfo getComplementaryPixel(int pixel) {
                 float[] hsv = new float[3];
                 Color.colorToHSV(pixel, hsv);
-                return Color.HSVToColor(new float[] {getHueHSV(hsv[0] + 180), hsv[1], hsv[2]});
+                int color = Color.HSVToColor(new float[] {getHueHSV(hsv[0] + 180), hsv[1], hsv[2]});
+                String hex = getHexColorString(color);
+                int intensity = getIntensity(color);
+                return new ColorInfo(color, hex, intensity);
         }
-        static int[] getTriadic(int pixel) {
+        static List<ColorInfo> getTriadic(int pixel) {
                 int[] rgb = getRGB(pixel);
                 int first = Color.rgb(rgb[2], rgb[0], rgb[1]);
+                int firstIntensity = getIntensity(first);
                 int second = Color.rgb(rgb[1], rgb[2], rgb[0]);
-
-                return new int[] {first, second};
+                int secondIntensity = getIntensity(second);
+                ColorInfo firstColor = new ColorInfo(first, getHexColorString(first), firstIntensity);
+                ColorInfo secondColor = new ColorInfo(second, getHexColorString(second), secondIntensity);
+                ArrayList<ColorInfo> list;
+                list = new ArrayList<>();
+                list.add(firstColor);
+                list.add(secondColor);
+                return list;
         }
-        static int[] getTetradic(int pixel) {
+        static List<ColorInfo> getTetradic(int pixel) {
                 float[] hsv = new float[3];
                 Color.colorToHSV(pixel, hsv);
                 float[] firstHsv = new float[] {getHueHSV(hsv[0] + 90), hsv[1], hsv[2]};
-                float[] secondHsv = new float[] {getHueHSV(hsv[0] + 180), hsv[1], hsv[2]};
-                float[] thirdHsv = new float[] {getHueHSV(hsv[0] + 270), hsv[1], hsv[2]};
                 int firstIntColor = Color.HSVToColor(firstHsv);
+                int firstIntensity = getIntensity(firstIntColor);
+
+                float[] secondHsv = new float[] {getHueHSV(hsv[0] + 180), hsv[1], hsv[2]};
                 int secondIntColor = Color.HSVToColor(secondHsv);
+                int secondIntensity = getIntensity(secondIntColor);
+
+                float[] thirdHsv = new float[] {getHueHSV(hsv[0] + 270), hsv[1], hsv[2]};
                 int thirdIntColor = Color.HSVToColor(thirdHsv);
-                return new int[] {firstIntColor, secondIntColor, thirdIntColor};
+                int thirdIntensity = getIntensity(thirdIntColor);
+
+                ArrayList<ColorInfo> list;
+                list = new ArrayList<>();
+                list.add(new ColorInfo(firstIntColor, getHexColorString(firstIntColor), firstIntensity));
+                list.add(new ColorInfo(secondIntColor, getHexColorString(secondIntColor), secondIntensity));
+                list.add(new ColorInfo(thirdIntColor, getHexColorString(thirdIntColor), thirdIntensity));
+                return list;
         }
-        static int[] getAnalogous(int pixel) {
+        static List<ColorInfo> getAnalogous(int pixel) {
                 float[] hsv = new float[3];
                 Color.colorToHSV(pixel, hsv);
                 float[] oneSideHSV = new float[] {getHueHSV(hsv[0] - 30), hsv[1], hsv[2]};
-                float[] otherSideHSV = new float[] {getHueHSV(hsv[0] + 30), hsv[1], hsv[2]};
                 int oneSideColor = Color.HSVToColor(oneSideHSV);
+                int oneSideIntensity = getIntensity(oneSideColor);
+
+                float[] otherSideHSV = new float[] {getHueHSV(hsv[0] + 30), hsv[1], hsv[2]};
                 int otherSideColor = Color.HSVToColor(otherSideHSV);
-                return new int[] {oneSideColor, otherSideColor};
+                int otherSideIntensity = getIntensity(otherSideColor);
+                ArrayList<ColorInfo> list;
+                list = new ArrayList<>();
+                list.add(new ColorInfo(oneSideColor, getHexColorString(oneSideColor), oneSideIntensity));
+                list.add(new ColorInfo(otherSideColor, getHexColorString(otherSideColor), otherSideIntensity));
+                return list;
         }
 
         // setting texts and colors to panels aka binding
         // complementary
-        static String complementaryBind(int selectedPixel, String selectedHex, FragmentPhotoBinding bnd) {
-                int complementaryPixel = getComplementaryPixel(selectedPixel);
-                String complementaryHex = getHexColorString(complementaryPixel);
-                bnd.complFirst.setText(selectedHex);
-                bnd.complSecond.setText(complementaryHex);
-                bnd.complFirst.setTextColor(complementaryPixel);
-                bnd.complSecond.setTextColor(selectedPixel);
-                bnd.complFirst.setBackgroundColor(selectedPixel);
-                bnd.complSecond.setBackgroundColor(complementaryPixel);
-                return "Complementary:\n" + selectedHex + "\n" + complementaryHex;
+        static String complementaryBind(Colors colors, FragmentPhotoBinding bnd) {
+                bnd.complFirst.setText(colors.pixelColor.colorString);
+                bnd.complFirst.setBackgroundColor(colors.pixelColor.colorInt);
+                bnd.complFirst.setTextColor(colors.pixelColor.textColor);
+
+                bnd.complSecond.setText(colors.complementary.colorString);
+                bnd.complSecond.setBackgroundColor(colors.complementary.colorInt);
+                bnd.complSecond.setTextColor(colors.complementary.textColor);
+
+                return "Complementary:\n" +
+                        colors.pixelColor.colorString + "\n" +
+                        colors.complementary.colorString;
         }
         // triadic
-        static String triadicBind(int selectedPixel, String selectedHex, FragmentPhotoBinding bnd) {
-                int[] triadicPixels = getTriadic(selectedPixel);
-                String secondTriadicHex = getHexColorString(triadicPixels[0]);
-                String thirdTriadicHex = getHexColorString(triadicPixels[1]);
-                bnd.triangleOne.setText(selectedHex);
-                bnd.triangleTwo.setText(secondTriadicHex);
-                bnd.triangleThree.setText(thirdTriadicHex);
+        static String triadicBind(Colors colors, FragmentPhotoBinding bnd) {
+                bnd.triangleOne.setText(colors.pixelColor.colorString);
+                bnd.triangleOne.setBackgroundColor(colors.pixelColor.colorInt);
+                bnd.triangleOne.setTextColor(colors.pixelColor.textColor);
 
-                bnd.triangleOne.setTextColor(getComplementaryPixel(selectedPixel));
-                bnd.triangleTwo.setTextColor(getComplementaryPixel(triadicPixels[0]));
-                bnd.triangleThree.setTextColor(getComplementaryPixel(triadicPixels[1]));
-                bnd.triangleOne.setBackgroundColor(selectedPixel);
-                bnd.triangleTwo.setBackgroundColor(triadicPixels[0]);
-                bnd.triangleThree.setBackgroundColor(triadicPixels[1]);
-                return "Triadic Harmony:\n" + selectedHex + "\n" + secondTriadicHex + "\n" + thirdTriadicHex;
+                bnd.triangleTwo.setText(colors.triadic.second.colorString);
+                bnd.triangleTwo.setBackgroundColor(colors.triadic.third.colorInt);
+                bnd.triangleTwo.setTextColor(colors.triadic.second.textColor);
+
+                bnd.triangleThree.setText(colors.triadic.third.colorString);
+                bnd.triangleThree.setBackgroundColor(colors.triadic.third.colorInt);
+                bnd.triangleThree.setTextColor(colors.triadic.third.textColor);
+                return "Triadic Harmony:\n" +
+                        colors.pixelColor.colorString+ "\n" +
+                        colors.triadic.second.colorString + "\n" +
+                        colors.triadic.third.colorString;
         }
         //tetradic
-        static String tetradicBind(int selectedPixel, String selectedHex, FragmentPhotoBinding bnd) {
-                int[] tetradicPixels = getTetradic(selectedPixel);
-                String secondTetradicHex = getHexColorString(tetradicPixels[0]);
-                String thirdTetradicHex = getHexColorString(tetradicPixels[1]);
-                String fourthTetradicHex = getHexColorString(tetradicPixels[2]);
+        static String tetradicBind(Colors colors, FragmentPhotoBinding bnd) {
+                bnd.tetradicOne.setText(colors.pixelColor.colorString);
+                bnd.tetradicOne.setBackgroundColor(colors.pixelColor.colorInt);
+                bnd.tetradicOne.setTextColor(colors.pixelColor.textColor);
 
-                bnd.tetradicOne.setText(selectedHex);
-                bnd.tetradicTwo.setText(secondTetradicHex);
-                bnd.tetradicThree.setText(thirdTetradicHex);
-                bnd.tetradicFour.setText(fourthTetradicHex);
+                bnd.tetradicTwo.setText(colors.tetradic.second.colorString);
+                bnd.tetradicTwo.setBackgroundColor(colors.tetradic.second.colorInt);
+                bnd.tetradicTwo.setTextColor(colors.tetradic.second.textColor);
 
-                bnd.tetradicOne.setTextColor(getComplementaryPixel(selectedPixel));
-                bnd.tetradicTwo.setTextColor(getComplementaryPixel(tetradicPixels[0]));
-                bnd.tetradicThree.setTextColor(getComplementaryPixel(tetradicPixels[1]));
-                bnd.tetradicFour.setTextColor(getComplementaryPixel(tetradicPixels[2]));
-                bnd.tetradicOne.setBackgroundColor(selectedPixel);
-                bnd.tetradicTwo.setBackgroundColor(tetradicPixels[0]);
-                bnd.tetradicThree.setBackgroundColor(tetradicPixels[1]);
-                bnd.tetradicFour.setBackgroundColor(tetradicPixels[2]);
+                bnd.tetradicThree.setText(colors.tetradic.third.colorString);
+                bnd.tetradicThree.setBackgroundColor(colors.tetradic.third.colorInt);
+                bnd.tetradicThree.setTextColor(colors.tetradic.third.textColor);
+
+                bnd.tetradicFour.setText(colors.tetradic.fourth.colorString);
+                bnd.tetradicFour.setBackgroundColor(colors.tetradic.fourth.colorInt);
+                bnd.tetradicFour.setTextColor(colors.tetradic.fourth.textColor);
 
                 return "Tetradic Harmony:\n"
-                        + selectedHex + "\n"
-                        + secondTetradicHex + "\n"
-                        + thirdTetradicHex + "\n"
-                        + fourthTetradicHex;
+                        + colors.pixelColor.colorString + "\n"
+                        + colors.tetradic.second.colorString + "\n"
+                        + colors.tetradic.third.colorString + "\n"
+                        + colors.tetradic.fourth.colorString;
         }
         // analogous
-        static String analogousBind(int selectedPixel, String selectedHex, FragmentPhotoBinding bnd) {
-                int[] analogPixels = getAnalogous(selectedPixel);
-                String firstAnalogHex = getHexColorString(analogPixels[0]);
-                String secondAnalogHex = getHexColorString(analogPixels[1]);
-                bnd.analogousOne.setText(firstAnalogHex);
-                bnd.analogousTwoInitial.setText(selectedHex);
-                bnd.analogousThree.setText(secondAnalogHex);
+        static String analogousBind(Colors colors, FragmentPhotoBinding bnd) {
+                bnd.analogousOne.setText(colors.analogous.first.colorString);
+                bnd.analogousOne.setBackgroundColor(colors.analogous.first.colorInt);
+                bnd.analogousOne.setTextColor(colors.analogous.first.textColor);
 
-                bnd.analogousOne.setTextColor(getComplementaryPixel(analogPixels[0]));
-                bnd.analogousTwoInitial.setTextColor(getComplementaryPixel(selectedPixel));
-                bnd.analogousThree.setTextColor(getComplementaryPixel(analogPixels[1]));
-                bnd.analogousOne.setBackgroundColor(analogPixels[0]);
-                bnd.analogousTwoInitial.setBackgroundColor(selectedPixel);
-                bnd.analogousThree.setBackgroundColor(analogPixels[1]);
-                return "Analogous Harmony:\n" + firstAnalogHex + "\n" + selectedHex + "\n" + secondAnalogHex;
+                bnd.analogousTwoInitial.setText(colors.pixelColor.colorString);
+                bnd.analogousTwoInitial.setBackgroundColor(colors.pixelColor.colorInt);
+                bnd.analogousTwoInitial.setTextColor(colors.pixelColor.textColor);
+
+                bnd.analogousThree.setText(colors.analogous.second.colorString);
+                bnd.analogousThree.setBackgroundColor(colors.analogous.second.colorInt);
+                bnd.analogousThree.setTextColor(colors.analogous.second.textColor);
+
+                return "Analogous Harmony:\n" +
+                        colors.analogous.first.colorString + "\n" +
+                        colors.pixelColor.colorString + "\n" +
+                        colors.analogous.second.colorString;
         }
 }

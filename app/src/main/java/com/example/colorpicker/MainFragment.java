@@ -35,7 +35,7 @@ public class MainFragment extends Fragment {
                 bnd.openExplorer.setOnClickListener(v -> {
                         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
                         intent.setType("image/*");
-                        launchSomeActivity.launch(intent);
+                        openFileExplorer.launch(intent);
                 });
                 goToImage.setOnClickListener(v ->
                         Navigation.findNavController(v).navigate(R.id.action_mainFragment_to_photoFragment, bundle)
@@ -43,7 +43,7 @@ public class MainFragment extends Fragment {
         return bnd.getRoot();
         }
 
-        ActivityResultLauncher<Intent> launchSomeActivity
+        ActivityResultLauncher<Intent> openFileExplorer
                 = registerForActivityResult(
                 new ActivityResultContracts
                         .StartActivityForResult(),
