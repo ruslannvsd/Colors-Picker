@@ -107,7 +107,7 @@ public class PhotoFragment extends Fragment {
         }
 
         static Colors getPixelColor(int pixel) {
-                ColorInfo pixelIntString = new ColorInfo(pixel, getHexColorString(pixel), getIntensity(pixel));
+                ColorInfo pixelColor  = new ColorInfo(pixel, getHexColorString(pixel), getIntensity(pixel));
                 ColorInfo complementary = getComplementaryPixel(pixel);
                 List<ColorInfo> triadic = getTriadic(pixel);
                 List<ColorInfo> tetradic = getTetradic(pixel);
@@ -115,7 +115,7 @@ public class PhotoFragment extends Fragment {
                 Triadic triadicObj = new Triadic(triadic.get(0), triadic.get(1));
                 Tetradic tetradicObj = new Tetradic(tetradic.get(0), tetradic.get(1), tetradic.get(2));
                 Analogous analogousObj = new Analogous(analogous.get(0), analogous.get(1));
-                return new Colors(pixelIntString, complementary, triadicObj, tetradicObj, analogousObj);
+                return new Colors(pixelColor , complementary, triadicObj, tetradicObj, analogousObj);
         }
 
         // supporting methods
@@ -180,13 +180,18 @@ public class PhotoFragment extends Fragment {
                 return new ColorInfo(color, hex, intensity);
         }
         static List<ColorInfo> getTriadic(int pixel) {
-                int[] rgb = getRGB(pixel);
-                int first = Color.rgb(rgb[2], rgb[0], rgb[1]);
-                int firstIntensity = getIntensity(first);
-                int second = Color.rgb(rgb[1], rgb[2], rgb[0]);
-                int secondIntensity = getIntensity(second);
-                ColorInfo firstColor = new ColorInfo(first, getHexColorString(first), firstIntensity);
-                ColorInfo secondColor = new ColorInfo(second, getHexColorString(second), secondIntensity);
+                float[] hsv = new float[3];
+                Color.colorToHSV(pixel, hsv);
+                float[] firstHsv = new float[] {getHueHSV(hsv[0] + 120), hsv[1], hsv[2]};
+                int firstIntColor = Color.HSVToColor(firstHsv);
+                int firstIntensity = getIntensity(firstIntColor);
+
+                float[] secondHsv = new float[] {getHueHSV(hsv[0] + 240), hsv[1], hsv[2]};
+                int secondIntColor = Color.HSVToColor(secondHsv);
+                int secondIntensity = getIntensity(secondIntColor);
+
+                ColorInfo firstColor = new ColorInfo(firstIntColor, getHexColorString(firstIntColor), firstIntensity);
+                ColorInfo secondColor = new ColorInfo(secondIntColor, getHexColorString(secondIntColor), secondIntensity);
                 ArrayList<ColorInfo> list;
                 list = new ArrayList<>();
                 list.add(firstColor);
@@ -254,7 +259,7 @@ public class PhotoFragment extends Fragment {
                 bnd.triangleOne.setTextColor(colors.pixelColor.textColor);
 
                 bnd.triangleTwo.setText(colors.triadic.second.colorString);
-                bnd.triangleTwo.setBackgroundColor(colors.triadic.third.colorInt);
+                bnd.triangleTwo.setBackgroundColor(colors.triadic.second.colorInt);
                 bnd.triangleTwo.setTextColor(colors.triadic.second.textColor);
 
                 bnd.triangleThree.setText(colors.triadic.third.colorString);

@@ -13,5 +13,5 @@ dependencyResolutionManagement {
         maven { url 'https://jitpack.io' }
     }
 }
-rootProject.name = "Color Picker"
+rootProject.name = "Color Harmonies"
 include ':app'
